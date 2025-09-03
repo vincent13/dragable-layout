@@ -6,13 +6,31 @@ import type { Layouts, Layout } from 'react-grid-layout';
 import Link from 'next/link';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
+import Widget from "@/app/custom-component/Widget";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
+
 
 export default function EditorPage() {
     const layoutId = '1'; // optionally make this dynamic later
     const [layouts, setLayouts] = useState<Layouts | null>(null);
+    const [items, setItems] = useState<string[]>(['a', 'b']); // track widget IDs
 
+    const handleRemoveWidget = (id: string) => { //remove widget
+        if (!layouts) return;
+
+        // Remove from items
+        const updatedItems = items.filter((item) => item !== id);
+
+        // Remove from layout
+        const updatedLayouts: Layouts = {
+            ...layouts,
+            lg: (layouts.lg || []).filter((item) => item.i !== id),
+        };
+
+        setItems(updatedItems);
+        setLayouts(updatedLayouts);
+    };
     useEffect(() => {
         fetch(`/api/layout/${layoutId}`)
             .then((res) => {
@@ -21,6 +39,10 @@ export default function EditorPage() {
             })
             .then((data) => {
                 setLayouts(data);
+                // If layout contains keys, sync items
+                if (data.lg) {
+                    setItems(data.lg.map((item: Layout) => item.i));
+                }
             })
             .catch((err) => {
                 console.error(err);
@@ -51,6 +73,27 @@ export default function EditorPage() {
         }
     };
 
+    const handleAddWidget = () => {
+        if (!layouts) return;
+
+        const newId = `widget-${items.length + 1}`;
+        const newItem: Layout = {
+            i: newId,
+            x: 0,
+            y: Infinity, // places at the bottom
+            w: 3,
+            h: 2,
+        };
+
+        const updatedLayouts: Layouts = {
+            ...layouts,
+            lg: [...(layouts.lg || []), newItem],
+        };
+
+        setItems([...items, newId]);
+        setLayouts(updatedLayouts);
+    };
+
     if (!layouts) return <p>Loading editor...</p>;
 
     return (
@@ -61,13 +104,16 @@ export default function EditorPage() {
                 <button onClick={handleSave} style={{ marginRight: '1rem' }}>
                     Save Layout
                 </button>
-                <Link href={`/pages/viewer?layoutId=${layoutId}`}>
+                <button onClick={handleAddWidget} style={{ marginRight: '1rem' }}>
+                    Add Widget
+                </button>
+                <Link href={`/viewer?layoutId=${layoutId}`}>
                     <button>View Layout</button>
                 </Link>
             </div>
 
             <ResponsiveGridLayout
-                style={{ padding: '1rem', border: '1px solid black' }}
+                style={{}}
                 layouts={layouts}
                 breakpoints={{ lg: 1200 }}
                 cols={{ lg: 12 }}
@@ -76,9 +122,13 @@ export default function EditorPage() {
                 isResizable={true}
                 verticalCompact={false}
                 onLayoutChange={handleLayoutChange}
+                draggableCancel=".no-drag, .no-drag *"
             >
-                <div key="a">Widget A</div>
-                <div key="b">Widget B</div>
+                {items.map((key) => (
+                    <div key={key}>
+                        <Widget id={key} title={key} onRemove={handleRemoveWidget} />
+                    </div>
+                ))}
             </ResponsiveGridLayout>
         </div>
     );
