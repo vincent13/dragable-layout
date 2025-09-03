@@ -1,23 +1,26 @@
-type WidgetProps = {
+// Widget.tsx
+import React, { ReactNode } from 'react';
+
+interface WidgetProps {
     id: string;
-    title?: string;
+    title: string;
     onRemove?: (id: string) => void;
-};
+    children?: ReactNode; // <-- allow any React content
+}
 
-export default function Widget({ id, title, onRemove }: WidgetProps) {
+const Widget: React.FC<WidgetProps> = ({ id, title, onRemove, children }) => {
     return (
-        <div className="relative p-4 flex flex-col items-center justify-center">
-            {/* Remove Button (X) */}
-            {onRemove && (
-                <button onClick={(e) => {
-                        e.stopPropagation();
-                        onRemove?.(id);
-                    }} className="no-drag absolute top-1 right-1 text-gray-500 hover:text-red-600 font-bold">✕</button>
-            )}
-
-            {/* Content */}
-            <h3 className="font-bold text-lg">{title ?? `Widget ${id}`}</h3>
-            <p className="text-sm text-gray-500">content</p>
+        <div className="border rounded p-2 relative bg-white">
+            {title && <h4 className="font-bold mb-2">{title}</h4>}
+            {children}
+            {onRemove && (<button
+                onClick={() => onRemove(id)}
+                style={{ position: 'absolute', top: 5, right: 5 }}
+            >
+                ×
+            </button>)}
         </div>
     );
-}
+};
+
+export default Widget;

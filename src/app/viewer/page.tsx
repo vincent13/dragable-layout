@@ -1,68 +1,84 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Responsive, WidthProvider } from 'react-grid-layout';
-import type { Layouts } from 'react-grid-layout';
+import type { Layouts, Layout } from 'react-grid-layout';
+import Widget from '@/app/custom-component/Widget';
+import { ProductsWidget } from '../custom-component/ProductsWidget';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
-import Widget from "@/app/custom-component/Widget";
-
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
-function ViewerContent() {
-    const [layouts, setLayouts] = useState<Layouts | null>(null);
+type WidgetItem = {
+    id: string;
+    type: 'products';
+    config?: {
+        selectedTaxonId?: number;
+        selectedTaxonName?: string;
+    };
+};
+
+export default function ViewerPage() {
     const searchParams = useSearchParams();
-    const layoutId = searchParams.get('layoutId') ?? '';
+    const layoutId = searchParams.get('layoutId') || '1';
+
+    const [layouts, setLayouts] = useState<Layouts | null>(null);
+    const [items, setItems] = useState<WidgetItem[]>([]);
 
     useEffect(() => {
-        if (!layoutId) return;
         fetch(`/api/layout/${layoutId}`)
-            .then((res) => {
-                if (!res.ok) throw new Error('Layout not found');
-                return res.json();
+            .then((res) => (res.ok ? res.json() : Promise.reject('Layout not found')))
+            .then((data) => {
+                setLayouts(data);
+                if (data.lg) {
+                    const savedItems: WidgetItem[] = data.lg.map((item: Layout & { config?: WidgetItem['config'] }) => ({
+                        id: item.i,
+                        type: 'products',
+                        config: item.config ?? {}, // now TypeScript knows about config
+                    }));
+                    setItems(savedItems);
+                }
             })
-            .then((data: Layouts) => setLayouts(data))
             .catch((err) => {
                 console.error(err);
+                setLayouts({ lg: [] });
             });
     }, [layoutId]);
 
-    if (!layoutId) {
-        return <p style={{ padding: 16 }}>No layoutId provided in URL.</p>;
-    }
-    if (!layouts) {
-        return <p style={{ padding: 16 }}>Loading layout...</p>;
-    }
+    if (!layouts) return <p>Loading layout...</p>;
 
     return (
         <div style={{ padding: '1rem' }}>
             <h2>Layout Viewer</h2>
+
             <ResponsiveGridLayout
                 layouts={layouts}
                 breakpoints={{ lg: 1200 }}
                 cols={{ lg: 12 }}
                 rowHeight={30}
-                isDraggable={false}
-                isResizable={false}
-                verticalCompact={false}
-                preventCollision={true}
+                isDraggable={false} // viewer mode, no drag
+                isResizable={false} // viewer mode, no resize
             >
-                {layouts.lg.map((item) => (
-                    <div key={item.i}>
-                        <Widget id={item.i} title={item.i} />
+                {items.map((item) => (
+                    <div key={item.id}>
+                        <Widget
+                            id={item.id}
+                            title={item.config?.selectedTaxonName ?? item.id}
+                            onRemove={() => {}}
+                        >
+                            {item.type === 'products' && (
+                                <ProductsWidget
+                                    catalogOwnerId="1239"
+                                    selectedTaxonId={item.config?.selectedTaxonId}
+                                    readOnly={true} // disables selection in viewer
+                                />
+                            )}
+                        </Widget>
                     </div>
                 ))}
             </ResponsiveGridLayout>
         </div>
-    );
-}
-
-export default function ViewerPage() {
-    return (
-        <Suspense fallback={<p style={{ padding: 16 }}>Loading viewer...</p>}>
-            <ViewerContent />
-        </Suspense>
     );
 }

@@ -6,21 +6,57 @@ import type { Layouts, Layout } from 'react-grid-layout';
 import Link from 'next/link';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import Widget from "@/app/custom-component/Widget";
+import Widget from '@/app/custom-component/Widget';
+import { ProductsWidget } from '../custom-component/ProductsWidget';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
+type WidgetItem = {
+    id: string;
+    type: 'products';
+    config?: {
+        selectedTaxonId?: number;
+        selectedTaxonName?: string; // store the name too
+    };
+};
 
 export default function EditorPage() {
     const layoutId = '1'; // optionally make this dynamic later
     const [layouts, setLayouts] = useState<Layouts | null>(null);
-    const [items, setItems] = useState<string[]>(['a', 'b']); // track widget IDs
+    const [items, setItems] = useState<WidgetItem[]>([]);
 
-    const handleRemoveWidget = (id: string) => { //remove widget
+    // Load existing layout from API
+    useEffect(() => {
+        fetch(`/api/layout/${layoutId}`)
+            .then((res) => {
+                if (!res.ok) throw new Error('Layout not found');
+                return res.json();
+            })
+            .then((data) => {
+                setLayouts(data);
+                if (data.lg) {
+                    setItems(
+                        data.lg.map(
+                            (item: Layout & { config?: { selectedTaxonId?: number } }) => ({
+                                id: item.i,
+                                type: 'products',
+                                config: item.config ?? {}, // <-- restore selectedTaxonId here
+                            })
+                        )
+                    );
+                }
+            })
+            .catch((err) => {
+                console.error(err);
+                setLayouts({ lg: [] }); // fallback empty layout
+            });
+    }, []);
+
+    const handleRemoveWidget = (id: string) => {
         if (!layouts) return;
 
         // Remove from items
-        const updatedItems = items.filter((item) => item !== id);
+        const updatedItems = items.filter((item) => item.id !== id);
 
         // Remove from layout
         const updatedLayouts: Layouts = {
@@ -31,24 +67,6 @@ export default function EditorPage() {
         setItems(updatedItems);
         setLayouts(updatedLayouts);
     };
-    useEffect(() => {
-        fetch(`/api/layout/${layoutId}`)
-            .then((res) => {
-                if (!res.ok) throw new Error('Layout not found');
-                return res.json();
-            })
-            .then((data) => {
-                setLayouts(data);
-                // If layout contains keys, sync items
-                if (data.lg) {
-                    setItems(data.lg.map((item: Layout) => item.i));
-                }
-            })
-            .catch((err) => {
-                console.error(err);
-                setLayouts({ lg: [] }); // fallback empty layout
-            });
-    }, []);
 
     const handleLayoutChange = (_layout: Layout[], allLayouts: Layouts) => {
         setLayouts(allLayouts);
@@ -57,13 +75,23 @@ export default function EditorPage() {
     const handleSave = async () => {
         if (!layouts) return;
 
+        // Merge layout positions with widget config
+        const layoutsWithConfig = {
+            ...layouts,
+            lg: layouts.lg?.map((l) => {
+                const widget = items.find((i) => i.id === l.i);
+                return {
+                    ...l,
+                    config: widget?.config ?? {},
+                };
+            }),
+        };
+
         try {
             const res = await fetch(`/api/layout/${layoutId}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(layouts),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(layoutsWithConfig),
             });
 
             if (!res.ok) throw new Error('Failed to save layout');
@@ -80,9 +108,9 @@ export default function EditorPage() {
         const newItem: Layout = {
             i: newId,
             x: 0,
-            y: Infinity, // places at the bottom
+            y: Infinity, // place at bottom
             w: 3,
-            h: 2,
+            h: 6,
         };
 
         const updatedLayouts: Layouts = {
@@ -90,7 +118,7 @@ export default function EditorPage() {
             lg: [...(layouts.lg || []), newItem],
         };
 
-        setItems([...items, newId]);
+        setItems([...items, { id: newId, type: 'products' }]);
         setLayouts(updatedLayouts);
     };
 
@@ -113,23 +141,47 @@ export default function EditorPage() {
             </div>
 
             <ResponsiveGridLayout
-                style={{}}
                 layouts={layouts}
                 breakpoints={{ lg: 1200 }}
                 cols={{ lg: 12 }}
                 rowHeight={30}
-                isDraggable={true}
-                isResizable={true}
+                isDraggable
+                isResizable
                 verticalCompact={false}
                 onLayoutChange={handleLayoutChange}
                 draggableCancel=".no-drag, .no-drag *"
             >
-                {items.map((key) => (
-                    <div key={key}>
-                        <Widget id={key} title={key} onRemove={handleRemoveWidget} />
+                {items.map((item) => (
+                    <div key={item.id}>
+                        <Widget
+                            id={item.id}
+                            title={item.config?.selectedTaxonName ?? item.id} // show taxon name if available
+                            onRemove={handleRemoveWidget}
+                        >
+                            <ProductsWidget
+                                catalogOwnerId="1239"
+                                selectedTaxonId={item.config?.selectedTaxonId}
+                                onChange={(taxonId, taxonName) => {
+                                    setItems(items.map((w) =>
+                                        w.id === item.id
+                                            ? {
+                                                ...w,
+                                                config: {
+                                                    ...w.config,
+                                                    selectedTaxonId: taxonId,
+                                                    selectedTaxonName: taxonName // store the name
+                                                }
+                                            }
+                                            : w
+                                    ));
+                                }}
+                                readOnly={false} // editor mode
+                            />
+                        </Widget>
                     </div>
                 ))}
             </ResponsiveGridLayout>
+
         </div>
     );
 }
