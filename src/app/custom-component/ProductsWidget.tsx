@@ -45,6 +45,7 @@ export const ProductsWidget: React.FC<ProductsWidgetProps> = ({
             {title && <h3 className="text-xl font-bold mb-4">{title}</h3>}
 
             <div className="mb-4">
+                {!readOnly &&(
                 <select
                     value={selectedTaxonId ?? ''}
                     onChange={(e) => {
@@ -53,7 +54,6 @@ export const ProductsWidget: React.FC<ProductsWidgetProps> = ({
                         const taxonName = taxons.find(t => t.id === taxonId)?.name ?? '';
                         onChange?.(taxonId, taxonName);
                     }}
-                    disabled={readOnly} // visually disable in read-only mode
                 >
                     <option value="">Select a category</option>
                     {taxons.map((taxon) => (
@@ -61,7 +61,7 @@ export const ProductsWidget: React.FC<ProductsWidgetProps> = ({
                             {taxon.name}
                         </option>
                     ))}
-                </select>
+                </select>)}
             </div>
 
             {loadingProducts ? (

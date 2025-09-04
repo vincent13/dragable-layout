@@ -94,7 +94,12 @@ export default function EditorPage() {
                 body: JSON.stringify(layoutsWithConfig),
             });
 
-            if (!res.ok) throw new Error('Failed to save layout');
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error(`Failed to save layout: ${res.status} ${errorText}`);
+                return; // early exit
+            }
+
             console.log('Layout saved!');
         } catch (err) {
             console.error('Save failed:', err);
@@ -157,6 +162,7 @@ export default function EditorPage() {
                             id={item.id}
                             title={item.config?.selectedTaxonName ?? item.id} // show taxon name if available
                             onRemove={handleRemoveWidget}
+                            readOnly={false}
                         >
                             <ProductsWidget
                                 catalogOwnerId="1239"
@@ -175,7 +181,7 @@ export default function EditorPage() {
                                             : w
                                     ));
                                 }}
-                                readOnly={false} // editor mode
+                                readOnly={false}
                             />
                         </Widget>
                     </div>

@@ -58,8 +58,8 @@ export default function ViewerPage() {
                 breakpoints={{ lg: 1200 }}
                 cols={{ lg: 12 }}
                 rowHeight={30}
-                isDraggable={false} // viewer mode, no drag
-                isResizable={false} // viewer mode, no resize
+                isDraggable={false}
+                isResizable={false}
             >
                 {items.map((item) => (
                     <div key={item.id}>
@@ -67,12 +67,13 @@ export default function ViewerPage() {
                             id={item.id}
                             title={item.config?.selectedTaxonName ?? item.id}
                             onRemove={() => {}}
+                            readOnly={true}
                         >
                             {item.type === 'products' && (
                                 <ProductsWidget
                                     catalogOwnerId="1239"
                                     selectedTaxonId={item.config?.selectedTaxonId}
-                                    readOnly={true} // disables selection in viewer
+                                    readOnly={true}
                                 />
                             )}
                         </Widget>
