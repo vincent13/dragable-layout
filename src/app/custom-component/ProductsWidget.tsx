@@ -1,6 +1,8 @@
+'use client';
+
 import { useEffect, useState } from 'react';
-import { fetchTaxons, fetchProductsByTaxonId } from '../services/api';
 import { Taxon, Product } from '../services/types';
+import { fetchTaxons, fetchProductsByTaxonId } from '../services/api';
 
 interface ProductsWidgetProps {
     catalogOwnerId: string;
@@ -8,6 +10,7 @@ interface ProductsWidgetProps {
     selectedTaxonId?: number;
     onChange?: (taxonId: number, taxonName: string) => void;
     readOnly?: boolean;
+    onRemove?: () => void; // new prop for editor remove button
 }
 
 export const ProductsWidget: React.FC<ProductsWidgetProps> = ({
@@ -16,66 +19,75 @@ export const ProductsWidget: React.FC<ProductsWidgetProps> = ({
                                                                   selectedTaxonId,
                                                                   onChange,
                                                                   readOnly = false,
+                                                                  onRemove,
                                                               }) => {
     const [taxons, setTaxons] = useState<Taxon[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [loadingProducts, setLoadingProducts] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetchTaxons(catalogOwnerId)
-            .then(setTaxons)
-            .catch((err) => setError(err.message));
+        fetchTaxons(catalogOwnerId).then(setTaxons);
     }, [catalogOwnerId]);
 
     useEffect(() => {
         if (!selectedTaxonId) return;
-
         setLoadingProducts(true);
         fetchProductsByTaxonId(catalogOwnerId, selectedTaxonId)
             .then(setProducts)
-            .catch((err) => setError(err.message))
             .finally(() => setLoadingProducts(false));
     }, [catalogOwnerId, selectedTaxonId]);
 
-    if (error) return <div>Error: {error}</div>;
-
     return (
-        <div className="products-widget p-4 border rounded-md shadow-sm">
-            {title && <h3 className="text-xl font-bold mb-4">{title}</h3>}
+        <div className="products-widget relative h-full flex flex-col border rounded shadow-sm bg-white">
+            {/* Header */}
+            <div className="products-widget-header flex items-center justify-between p-2 h-12 border-b bg-gray-50">
+                {!readOnly ? (
+                    <select
+                        className="w-full p-1 border rounded"
+                        value={selectedTaxonId ?? ''}
+                        onChange={(e) => {
+                            const taxonId = Number(e.target.value);
+                            const taxonName = taxons.find((t) => t.id === taxonId)?.name ?? '';
+                            onChange?.(taxonId, taxonName);
+                        }}
+                    >
+                        <option value="">Select a category</option>
+                        {taxons.map((t) => (
+                            <option key={t.id} value={t.id}>
+                                {t.name}
+                            </option>
+                        ))}
+                    </select>
+                ) : (
+                    <h3 className="text-lg font-bold">{title}</h3>
+                )}
 
-            <div className="mb-4">
-                {!readOnly &&(
-                <select
-                    value={selectedTaxonId ?? ''}
-                    onChange={(e) => {
-                        if (readOnly) return; // ignore changes when read-only
-                        const taxonId = Number(e.target.value);
-                        const taxonName = taxons.find(t => t.id === taxonId)?.name ?? '';
-                        onChange?.(taxonId, taxonName);
-                    }}
-                >
-                    <option value="">Select a category</option>
-                    {taxons.map((taxon) => (
-                        <option key={taxon.id} value={taxon.id}>
-                            {taxon.name}
-                        </option>
-                    ))}
-                </select>)}
+                {!readOnly && onRemove && (
+                    <button
+                        className="ml-2 text-white bg-red-500 hover:bg-red-600 rounded px-2 py-1 text-sm"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onRemove();
+                        }}
+                    >
+                        ✖
+                    </button>
+                )}
             </div>
 
-            {loadingProducts ? (
-                <div>Loading products…</div>
-            ) : (
-                <ul className="grid grid-cols-2 gap-4">
-                    {products.map((p) => (
-                        <li key={p.id} className="border rounded-lg p-2 shadow-sm">
-                            <h4 className="font-semibold">{p.name}</h4>
-                            <p className="text-green-600 font-bold mt-1">€{p.price}</p>
-                        </li>
-                    ))}
-                </ul>
-            )}
+            {/* Product list */}
+            <div className="product-list flex-1 overflow-hidden p-2">
+                {loadingProducts ? (
+                    <p>Loading…</p>
+                ) : (
+                    products.map((p) => (
+                        <div key={p.id} className="product-item flex justify-between p-2 bg-yellow-200 mb-1 rounded">
+                            <span className="product-name">{p.name}</span>
+                            <span className="product-price">€{p.price}</span>
+                        </div>
+                    ))
+                )}
+            </div>
         </div>
     );
 };

@@ -16,7 +16,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <header style={{ marginBottom: '2rem' }}>
                 <nav>
                     <Link href="/">Home</Link> |{' '}
-                    <Link href="/editor">Editor</Link> |{' '}
+                    <Link href="/editor?layoutId=1">Editor</Link> |{' '}
                     <Link href="/viewer?layoutId=1">Viewer</Link>
                 </nav>
             </header>

@@ -23,15 +23,16 @@ export async function query<T extends Record<string, unknown>>(
     return rows;
 }
 
-// 3. Load a single layout by ID
 export async function loadLayout(
     layoutId: string | number
 ): Promise<string | null> {
     const sql = 'SELECT layout_config FROM tbl_layouts WHERE id = ? LIMIT 1';
-    const rows = await query<{ layout_config: string }>(sql, [layoutId]);
-    return typeof rows[0]?.layout_config === 'string'
-        ? rows[0].layout_config
-        : null;
+    const rows = await query<{ layout_config: string | Buffer }>(sql, [layoutId]);
+
+    const value = rows[0]?.layout_config;
+    if (!value) return null;
+
+    return Buffer.isBuffer(value) ? value.toString("utf8") : value;
 }
 export async function saveLayout(layoutId: string, layoutJson: string) {
     const conn = await pool.getConnection();

@@ -3,147 +3,83 @@
 import { useEffect, useState } from 'react';
 import { Responsive, WidthProvider } from 'react-grid-layout';
 import type { Layouts, Layout } from 'react-grid-layout';
-import Link from 'next/link';
+import { ProductsWidget } from '../custom-component/ProductsWidget';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import Widget from '@/app/custom-component/Widget';
-import { ProductsWidget } from '../custom-component/ProductsWidget';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
 type WidgetItem = {
     id: string;
-    type: 'products';
-    config?: {
+    config: {
         selectedTaxonId?: number;
-        selectedTaxonName?: string; // store the name too
+        selectedTaxonName?: string;
     };
 };
 
 export default function EditorPage() {
-    const layoutId = '1'; // optionally make this dynamic later
-    const [layouts, setLayouts] = useState<Layouts | null>(null);
+    const [layouts, setLayouts] = useState<Layouts>({ lg: [] });
     const [items, setItems] = useState<WidgetItem[]>([]);
 
-    // Load existing layout from API
+    const layoutId = '1'; // You can replace with searchParams if needed
+
+    // Load layout from API
     useEffect(() => {
         fetch(`/api/layout/${layoutId}`)
-            .then((res) => {
-                if (!res.ok) throw new Error('Layout not found');
-                return res.json();
-            })
+            .then((res) => (res.ok ? res.json() : Promise.reject('Layout not found')))
             .then((data) => {
                 setLayouts(data);
                 if (data.lg) {
                     setItems(
-                        data.lg.map(
-                            (item: Layout & { config?: { selectedTaxonId?: number } }) => ({
-                                id: item.i,
-                                type: 'products',
-                                config: item.config ?? {}, // <-- restore selectedTaxonId here
-                            })
-                        )
+                        data.lg.map((l: Layout & { config?: WidgetItem['config'] }) => ({
+                            id: l.i,
+                            config: l.config ?? {},
+                        }))
                     );
                 }
             })
-            .catch((err) => {
-                console.error(err);
-                setLayouts({ lg: [] }); // fallback empty layout
+            .catch(() => {
+                setLayouts({ lg: [] });
+                setItems([]);
             });
     }, []);
 
-    const handleRemoveWidget = (id: string) => {
-        if (!layouts) return;
-
-        // Remove from items
-        const updatedItems = items.filter((item) => item.id !== id);
-
-        // Remove from layout
-        const updatedLayouts: Layouts = {
-            ...layouts,
-            lg: (layouts.lg || []).filter((item) => item.i !== id),
-        };
-
-        setItems(updatedItems);
-        setLayouts(updatedLayouts);
-    };
-
-    const handleLayoutChange = (_layout: Layout[], allLayouts: Layouts) => {
-        setLayouts(allLayouts);
-    };
-
+    // Save layout to API
     const handleSave = async () => {
-        if (!layouts) return;
-
-        // Merge layout positions with widget config
         const layoutsWithConfig = {
             ...layouts,
             lg: layouts.lg?.map((l) => {
                 const widget = items.find((i) => i.id === l.i);
-                return {
-                    ...l,
-                    config: widget?.config ?? {},
-                };
+                return { ...l, config: widget?.config ?? {} };
             }),
         };
 
-        try {
-            const res = await fetch(`/api/layout/${layoutId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(layoutsWithConfig),
-            });
+        await fetch(`/api/layout/${layoutId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(layoutsWithConfig),
+        });
 
-            if (!res.ok) {
-                const errorText = await res.text();
-                console.error(`Failed to save layout: ${res.status} ${errorText}`);
-                return; // early exit
-            }
-
-            console.log('Layout saved!');
-        } catch (err) {
-            console.error('Save failed:', err);
-        }
+        alert('Layout saved!');
     };
 
+    // Add new widget
     const handleAddWidget = () => {
-        if (!layouts) return;
-
         const newId = `widget-${items.length + 1}`;
-        const newItem: Layout = {
-            i: newId,
-            x: 0,
-            y: Infinity, // place at bottom
-            w: 3,
-            h: 6,
-        };
-
-        const updatedLayouts: Layouts = {
+        setItems([...items, { id: newId, config: {} }]);
+        setLayouts({
             ...layouts,
-            lg: [...(layouts.lg || []), newItem],
-        };
-
-        setItems([...items, { id: newId, type: 'products' }]);
-        setLayouts(updatedLayouts);
+            lg: [...(layouts.lg || []), { i: newId, x: 0, y: Infinity, w: 3, h: 6 }],
+        });
     };
-
-    if (!layouts) return <p>Loading editor...</p>;
 
     return (
         <div style={{ padding: '1rem' }}>
-            <h2>Layout Editor</h2>
-
-            <div style={{ marginBottom: '1rem' }}>
-                <button onClick={handleSave} style={{ marginRight: '1rem' }}>
-                    Save Layout
-                </button>
-                <button onClick={handleAddWidget} style={{ marginRight: '1rem' }}>
-                    Add Widget
-                </button>
-                <Link href={`/viewer?layoutId=${layoutId}`}>
-                    <button>View Layout</button>
-                </Link>
-            </div>
+            <h2>Editor</h2>
+            <button onClick={handleSave} style={{ marginRight: '1rem' }}>
+                Save
+            </button>
+            <button onClick={handleAddWidget}>Add Widget</button>
 
             <ResponsiveGridLayout
                 layouts={layouts}
@@ -153,41 +89,45 @@ export default function EditorPage() {
                 isDraggable
                 isResizable
                 verticalCompact={false}
-                onLayoutChange={handleLayoutChange}
-                draggableCancel=".no-drag, .no-drag *"
+                onLayoutChange={(_layout, allLayouts) => setLayouts(allLayouts)}
+                preventCollision
+                draggableCancel=".no-drag"
             >
-                {items.map((item) => (
-                    <div key={item.id}>
-                        <Widget
-                            id={item.id}
-                            title={item.config?.selectedTaxonName ?? item.id} // show taxon name if available
-                            onRemove={handleRemoveWidget}
-                            readOnly={false}
+                {items.map((widget) => (
+                    <div key={widget.id} className="relative">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setItems(items.filter((i) => i.id !== widget.id));
+                                setLayouts({
+                                    ...layouts,
+                                    lg: layouts.lg?.filter((l) => l.i !== widget.id) ?? [],
+                                });
+                            }}
+                            className="absolute top-1 right-1 z-10 bg-red-500 text-white text-xs px-2 py-1 rounded hover:bg-red-600 no-drag"
                         >
-                            <ProductsWidget
-                                catalogOwnerId="1239"
-                                selectedTaxonId={item.config?.selectedTaxonId}
-                                onChange={(taxonId, taxonName) => {
-                                    setItems(items.map((w) =>
-                                        w.id === item.id
-                                            ? {
-                                                ...w,
-                                                config: {
-                                                    ...w.config,
-                                                    selectedTaxonId: taxonId,
-                                                    selectedTaxonName: taxonName // store the name
-                                                }
-                                            }
-                                            : w
-                                    ));
-                                }}
-                                readOnly={false}
-                            />
-                        </Widget>
+                            ✖
+                        </button>
+
+                        {/* ProductsWidget */}
+                        <ProductsWidget
+                            catalogOwnerId="1239"
+                            title={widget.config.selectedTaxonName}
+                            selectedTaxonId={widget.config.selectedTaxonId}
+                            readOnly={false}
+                            onChange={(taxonId, taxonName) =>
+                                setItems(
+                                    items.map((i) =>
+                                        i.id === widget.id
+                                            ? { ...i, config: { selectedTaxonId: taxonId, selectedTaxonName: taxonName } }
+                                            : i
+                                    )
+                                )
+                            }
+                        />
                     </div>
                 ))}
             </ResponsiveGridLayout>
-
         </div>
     );
 }
