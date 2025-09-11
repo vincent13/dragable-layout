@@ -1,7 +1,6 @@
 import './globals.css';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import MantineProviderWrapper from './mantine-provider-wrapper';
 
 export const metadata = {
     title: 'Grid Layout App',
@@ -11,18 +10,16 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
     return (
         <html lang="en">
-        <body style={{ margin: 0, padding: '1rem', fontFamily: 'sans-serif' }}>
-        <MantineProviderWrapper>
-            <header style={{ marginBottom: '2rem' }}>
-                <nav>
-                    <Link href="/">Home</Link> |{' '}
-                    <Link href="/editor?layoutId=1">Editor</Link> |{' '}
-                    <Link href="/viewer?layoutId=1">Viewer</Link>
-                </nav>
-            </header>
+        <body>
+        <header className="mb-8">
+            <nav className="flex gap-4">
+                <Link href="/">Home</Link>
+                <Link href="/editor?layoutId=1">Editor</Link>
+                <Link href="/viewer?layoutId=1">Viewer</Link>
+            </nav>
+        </header>
 
-            <main>{children}</main>
-        </MantineProviderWrapper>
+        <main>{children}</main>
         </body>
         </html>
     );

@@ -10,7 +10,7 @@ interface ProductsWidgetProps {
     selectedTaxonId?: number;
     onChange?: (taxonId: number, taxonName: string) => void;
     readOnly?: boolean;
-    onRemove?: () => void; // new prop for editor remove button
+    onRemove?: () => void;
 }
 
 export const ProductsWidget: React.FC<ProductsWidgetProps> = ({
@@ -38,12 +38,12 @@ export const ProductsWidget: React.FC<ProductsWidgetProps> = ({
     }, [catalogOwnerId, selectedTaxonId]);
 
     return (
-        <div className="products-widget relative h-full flex flex-col border rounded shadow-sm bg-white">
+        <div className="products-widget relative h-full flex flex-col border rounded shadow-sm s" >
             {/* Header */}
-            <div className="products-widget-header flex items-center justify-between p-2 h-12 border-b bg-gray-50">
+            <div className="products-widget-header flex items-center justify-between h-12 border-b">
                 {!readOnly ? (
                     <select
-                        className="w-full p-1 border rounded"
+                        className="w-11/12 h-full border rounded"
                         value={selectedTaxonId ?? ''}
                         onChange={(e) => {
                             const taxonId = Number(e.target.value);
@@ -72,6 +72,7 @@ export const ProductsWidget: React.FC<ProductsWidgetProps> = ({
                     >
                         ✖
                     </button>
+
                 )}
             </div>
 

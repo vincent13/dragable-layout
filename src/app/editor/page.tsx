@@ -6,6 +6,7 @@ import type { Layouts, Layout } from 'react-grid-layout';
 import { ProductsWidget } from '../custom-component/ProductsWidget';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
+import { v4 as uuidv4 } from 'uuid';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -63,9 +64,8 @@ export default function EditorPage() {
         alert('Layout saved!');
     };
 
-    // Add new widget
     const handleAddWidget = () => {
-        const newId = `widget-${items.length + 1}`;
+        const newId = `widget-${uuidv4()}`;
         setItems([...items, { id: newId, config: {} }]);
         setLayouts({
             ...layouts,

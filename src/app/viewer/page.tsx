@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Responsive, WidthProvider } from 'react-grid-layout';
 import type { Layouts, Layout } from 'react-grid-layout';
@@ -18,12 +18,22 @@ type WidgetItem = {
     };
 };
 
-export default function ViewerPage() {
+// Client component for reading search params
+function SearchParamsViewer({ onLayoutId }: { onLayoutId: (id: string) => void }) {
     const searchParams = useSearchParams();
     const layoutId = searchParams.get('layoutId') || '1';
 
+    useEffect(() => {
+        onLayoutId(layoutId);
+    }, [layoutId, onLayoutId]);
+
+    return null; // this component does not render UI itself
+}
+
+export default function ViewerPage() {
     const [layouts, setLayouts] = useState<Layouts>({ lg: [] });
     const [items, setItems] = useState<WidgetItem[]>([]);
+    const [layoutId, setLayoutId] = useState('1');
 
     useEffect(() => {
         fetch(`/api/layout/${layoutId}`)
@@ -45,16 +55,21 @@ export default function ViewerPage() {
     }, [layoutId]);
 
     return (
-        <div style={{ padding: '1rem' }}>
+        <div style={{padding: '1rem'}}>
             <h2>Viewer</h2>
+            {/* Suspense boundary for the client hook */}
+            <Suspense fallback={null}>
+                <SearchParamsViewer onLayoutId={setLayoutId}/>
+            </Suspense>
 
             <ResponsiveGridLayout
                 layouts={layouts}
-                breakpoints={{ lg: 1200 }}
-                cols={{ lg: 12 }}
+                breakpoints={{lg: 1200}}
+                cols={{lg: 12}}
                 rowHeight={30}
                 isDraggable={false}
                 isResizable={false}
+                compactType={null}
             >
                 {items.map(widget => (
                     <div key={widget.id}>
