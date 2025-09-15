@@ -8,8 +8,9 @@ datasource db {
 }
 
 model Layout {
-  id        String   @id
+  id        String   @id @default(cuid())
   lg        Json
+  name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

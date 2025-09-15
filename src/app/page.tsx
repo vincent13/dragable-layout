@@ -1,10 +1,5 @@
+import HomePageClient from './custom-component/homePageClient';
 
-
-export default function Home() {
-    return (
-        <div>
-            <h1>Welcome</h1>
-            <button>Click me</button>
-        </div>
-    );
+export default function HomePage() {
+    return <HomePageClient />;
 }

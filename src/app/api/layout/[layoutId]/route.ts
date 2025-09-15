@@ -1,51 +1,28 @@
-// src/app/api/layout/[layoutId]/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import { loadLayout, saveLayout } from '@/app/services/database';
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 
-export async function GET(
-    _req: NextRequest,
-    context: { params: Promise<{ layoutId: string }> }
-) {
-    const { layoutId } = await context.params;
-
-    const rawJson = await loadLayout(layoutId);
-
-    if (!rawJson) {
-        return NextResponse.json(
-            { error: `No layout found for ID "${layoutId}"` },
-            { status: 404 }
-        );
-    }
-
-    try {
-        const layout = JSON.parse(rawJson);
-        return NextResponse.json(layout);
-    } catch (err) {
-        console.error('Failed to parse layout JSON:', err);
-        return NextResponse.json(
-            { error: 'Invalid layout JSON in database' },
-            { status: 500 }
-        );
-    }
+export async function GET(request: Request, { params }: { params: Promise<{ layoutId: string }> }) {
+    const { layoutId } = await params;
+    const layout = await prisma.layout.findUnique({ where: { id: layoutId } });
+    if (!layout) return NextResponse.json({ error: 'Layout not found' }, { status: 404 });
+    return NextResponse.json(layout);
 }
 
-export async function PUT(
-    req: NextRequest,
-    context: { params: Promise<{ layoutId: string }> }
-) {
-    const { layoutId } = await context.params;
+export async function PUT(request: Request, { params }: { params: Promise<{ layoutId: string }> }) {
+    const { layoutId } = await params;
+    const body = await request.json();
+    const lgData: Prisma.InputJsonValue = (body?.lg ?? []) as Prisma.InputJsonValue;
+    const nameData: string = body?.name ?? 'Untitled Layout';
+    const updatedLayout = await prisma.layout.update({
+        where: { id: layoutId },
+        data: { lg: lgData, name: nameData },
+    });
+    return NextResponse.json(updatedLayout);
+}
 
-    try {
-        const layout = await req.json();
-        const layoutJson = JSON.stringify(layout);
-
-        await saveLayout(layoutId, layoutJson);
-        return NextResponse.json({ success: true });
-    } catch (err) {
-        console.error('Failed to update layout:', err);
-        return NextResponse.json(
-            { error: 'Failed to update layout' },
-            { status: 500 }
-        );
-    }
+export async function DELETE(request: Request, { params }: { params: Promise<{ layoutId: string }> }) {
+    const { layoutId } = await params;
+    await prisma.layout.delete({ where: { id: layoutId } });
+    return new Response(null, { status: 204 });
 }

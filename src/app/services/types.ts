@@ -1,5 +1,6 @@
 // types.ts
 
+// Existing product/taxon types
 export interface ProductImage {
     thumb_url: string;
     small_url: string;
@@ -22,7 +23,6 @@ export interface Product {
     is_orderable: boolean;
     is_available: boolean;
     unit: string;
-    // Add more fields if needed
 }
 
 export interface Taxon {
@@ -30,5 +30,25 @@ export interface Taxon {
     name: string;
     parent_id?: number;
     position?: number;
-    // Add more fields if needed
 }
+
+// === Layout / Widget types ===
+
+// Configuration for a single widget
+export type WidgetConfig = {
+    selectedTaxonId?: number;
+    selectedTaxonName?: string;
+};
+
+// A single widget in the grid layout
+export type WidgetItem = {
+    i: string; // matches Layout.i in react-grid-layout
+    x?: number;
+    y?: number;
+    w?: number;
+    h?: number;
+    config?: WidgetConfig;
+};
+
+// Full layout stored in DB
+export type LayoutData = WidgetItem[];
