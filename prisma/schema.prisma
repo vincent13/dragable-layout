@@ -13,4 +13,16 @@ model Layout {
   name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  screens Screens[]
+}
+
+model Screens {
+  screenId  String   @id @default(cuid())
+  name      String
+  layoutId  String
+  layout    Layout   @relation(fields: [layoutId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @updatedAt
+
+  @@index([layoutId])
 }

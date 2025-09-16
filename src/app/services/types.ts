@@ -32,17 +32,13 @@ export interface Taxon {
     position?: number;
 }
 
-// === Layout / Widget types ===
-
-// Configuration for a single widget
 export type WidgetConfig = {
     selectedTaxonId?: number;
     selectedTaxonName?: string;
 };
 
-// A single widget in the grid layout
 export type WidgetItem = {
-    i: string; // matches Layout.i in react-grid-layout
+    i: string;
     x?: number;
     y?: number;
     w?: number;
@@ -50,5 +46,4 @@ export type WidgetItem = {
     config?: WidgetConfig;
 };
 
-// Full layout stored in DB
 export type LayoutData = WidgetItem[];

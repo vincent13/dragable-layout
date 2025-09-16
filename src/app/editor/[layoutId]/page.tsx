@@ -34,6 +34,12 @@ type WidgetItem = {
     };
 };
 
+type Screen = {
+    screenId: string;
+    name: string;
+    layoutId: string;
+};
+
 export default function EditorPage() {
     const params = useParams();
     const router = useRouter();
@@ -43,13 +49,23 @@ export default function EditorPage() {
     const [layoutName, setLayoutName] = useState('Untitled Layout');
     const [layouts, setLayouts] = useState<LayoutsState>({ lg: [] });
     const [items, setItems] = useState<WidgetItem[]>([]);
+    const [screens, setScreens] = useState<Screen[]>([]);
+    const [selectedScreen, setSelectedScreen] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetch('/api/screens')
+            .then(res => res.json())
+            .then(setScreens)
+            .catch(() => setScreens([]));
+    }, []);
 
     useEffect(() => {
         if (isNewLayout) {
             setLayouts({ lg: [] });
             setItems([]);
             setLayoutName('Untitled Layout');
+            setSelectedScreen(null);
             setLoading(false);
             return;
         }
@@ -67,13 +83,15 @@ export default function EditorPage() {
                         config: l.config ?? {},
                     }))
                 );
+                const linkedScreen = screens.find(s => s.layoutId === layoutId);
+                setSelectedScreen(linkedScreen ? linkedScreen.screenId : null);
             })
             .catch(() => {
                 setLayouts({ lg: [] });
                 setItems([]);
             })
             .finally(() => setLoading(false));
-    }, [layoutId, isNewLayout]);
+    }, [layoutId, isNewLayout, screens]);
 
     const handleSave = async () => {
         const layoutsWithConfig = {
@@ -84,6 +102,7 @@ export default function EditorPage() {
             }),
         };
 
+        let createdLayout;
         if (isNewLayout) {
             const res = await fetch('/api/layout', {
                 method: 'POST',
@@ -94,13 +113,10 @@ export default function EditorPage() {
                 }),
             });
 
-            if (!res.ok) {
-                alert('Failed to create layout');
-                return;
-            }
+            if (!res.ok) return alert('Failed to create layout');
 
-            const created = await res.json();
-            router.replace(`/editor/${created.id}`);
+            createdLayout = await res.json();
+            router.replace(`/editor/${createdLayout.id}`);
         } else {
             const res = await fetch(`/api/layout/${layoutId}`, {
                 method: 'PUT',
@@ -111,10 +127,17 @@ export default function EditorPage() {
                 }),
             });
 
-            if (!res.ok) {
-                alert('Failed to update layout');
-                return;
-            }
+            if (!res.ok) return alert('Failed to update layout');
+
+            createdLayout = await res.json();
+        }
+
+        if (selectedScreen) {
+            await fetch(`/api/screens/${selectedScreen}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ layoutId: createdLayout.id }),
+            });
         }
 
         alert('Layout saved!');
@@ -140,6 +163,16 @@ export default function EditorPage() {
                     onChange={(e) => setLayoutName(e.target.value)}
                     className="border px-2 py-1 rounded flex-1"
                 />
+                <select
+                    value={selectedScreen || ''}
+                    onChange={e => setSelectedScreen(e.target.value)}
+                    className="border px-2 py-1 rounded"
+                >
+                    <option value="">-- Assign to Screen --</option>
+                    {screens.map(s => (
+                        <option key={s.screenId} value={s.screenId}>{s.name}</option>
+                    ))}
+                </select>
                 <button onClick={handleSave} className="px-3 py-1 bg-blue-600 text-white rounded">Save</button>
                 <button onClick={handleAddWidget} className="px-3 py-1 bg-green-600 text-white rounded">Add Widget</button>
             </div>

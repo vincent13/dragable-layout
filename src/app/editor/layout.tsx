@@ -6,7 +6,7 @@ export default async function EditorLayout({ children }: { children: ReactNode }
         <div>
             <header className="mb-8">
                 {/* Dynamic nav links */}
-                <DynamicEditorNav/>
+                <DynamicEditorNav />
             </header>
 
             <main>{children}</main>
