@@ -6,7 +6,7 @@ import mysql from 'mysql2/promise';
 export const pool = mysql.createPool({
     host: 'localhost',       // Replace with your host
     user: 'Admin',           // Replace with your DB user
-    password: 'Zodiark92!',  // Replace with your DB password
+    password: 'test',  // Replace with your DB password
     database: 'layouts',     // Replace with your database name
     waitForConnections: true,
     connectionLimit: 10,
