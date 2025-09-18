@@ -35,6 +35,7 @@ export interface Taxon {
 export type WidgetConfig = {
     selectedTaxonId?: number;
     selectedTaxonName?: string;
+    taxonAlias?:string;
 };
 
 export type WidgetItem = {

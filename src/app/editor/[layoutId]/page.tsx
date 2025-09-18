@@ -19,26 +19,24 @@ type LayoutItem = {
     config?: {
         selectedTaxonId?: number;
         selectedTaxonName?: string;
+        taxonAlias?: string;
+        columns?: number;
     };
 };
 
-type LayoutsState = {
-    lg: LayoutItem[];
-};
+type LayoutsState = { lg: LayoutItem[] };
 
 type WidgetItem = {
     id: string;
     config: {
         selectedTaxonId?: number;
         selectedTaxonName?: string;
+        taxonAlias?: string;
+        columns?: number;
     };
 };
 
-type Screen = {
-    screenId: string;
-    name: string;
-    layoutId: string;
-};
+type Screen = { screenId: string; name: string; layoutId: string };
 
 export default function EditorPage() {
     const params = useParams();
@@ -54,10 +52,7 @@ export default function EditorPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch('/api/screens')
-            .then(res => res.json())
-            .then(setScreens)
-            .catch(() => setScreens([]));
+        fetch('/api/screens').then(res => res.json()).then(setScreens).catch(() => setScreens([]));
     }, []);
 
     useEffect(() => {
@@ -73,14 +68,17 @@ export default function EditorPage() {
         if (!layoutId) return;
 
         fetch(`/api/layout/${layoutId}`)
-            .then(res => res.ok ? res.json() : Promise.reject('Layout not found'))
+            .then(res => (res.ok ? res.json() : Promise.reject('Layout not found')))
             .then(data => {
                 setLayoutName(data.name);
                 setLayouts({ lg: data.lg });
                 setItems(
                     data.lg.map((l: LayoutItem) => ({
                         id: l.i,
-                        config: l.config ?? {},
+                        config: {
+                            ...l.config,
+                            columns: Array.isArray(l.config?.columns) ? l.config.columns[0] : l.config?.columns ?? 1,
+                        },
                     }))
                 );
                 const linkedScreen = screens.find(s => s.layoutId === layoutId);
@@ -98,7 +96,15 @@ export default function EditorPage() {
             ...layouts,
             lg: layouts.lg.map(l => {
                 const widget = items.find(i => i.id === l.i);
-                return { ...l, config: widget?.config ?? {} };
+                return {
+                    ...l,
+                    config: {
+                        selectedTaxonId: widget?.config?.selectedTaxonId,
+                        selectedTaxonName: widget?.config?.selectedTaxonName,
+                        taxonAlias: widget?.config?.taxonAlias,
+                        columns: widget?.config?.columns ?? 1,
+                    },
+                };
             }),
         };
 
@@ -107,28 +113,18 @@ export default function EditorPage() {
             const res = await fetch('/api/layout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: layoutName,
-                    lg: layoutsWithConfig.lg,
-                }),
+                body: JSON.stringify({ name: layoutName, lg: layoutsWithConfig.lg }),
             });
-
             if (!res.ok) return alert('Failed to create layout');
-
             createdLayout = await res.json();
             router.replace(`/editor/${createdLayout.id}`);
         } else {
             const res = await fetch(`/api/layout/${layoutId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: layoutName,
-                    lg: layoutsWithConfig.lg,
-                }),
+                body: JSON.stringify({ name: layoutName, lg: layoutsWithConfig.lg }),
             });
-
             if (!res.ok) return alert('Failed to update layout');
-
             createdLayout = await res.json();
         }
 
@@ -145,10 +141,10 @@ export default function EditorPage() {
 
     const handleAddWidget = () => {
         const newId = `widget-${uuidv4()}`;
-        setItems([...items, { id: newId, config: {} }]);
+        setItems([...items, { id: newId, config: { columns: 1 } }]);
         setLayouts({
             ...layouts,
-            lg: [...layouts.lg, { i: newId, x: 0, y: Infinity, w: 3, h: 6 }],
+            lg: [...layouts.lg, { i: newId, x: 0, y: Infinity, w: 3, h: 6, config: { columns: 1 } }],
         });
     };
 
@@ -165,11 +161,11 @@ export default function EditorPage() {
                 />
                 <select
                     value={selectedScreen || ''}
-                    onChange={e => setSelectedScreen(e.target.value)}
+                    onChange={(e) => setSelectedScreen(e.target.value)}
                     className="border px-2 py-1 rounded"
                 >
                     <option value="">-- Assign to Screen --</option>
-                    {screens.map(s => (
+                    {screens.map((s) => (
                         <option key={s.screenId} value={s.screenId}>{s.name}</option>
                     ))}
                 </select>
@@ -181,7 +177,7 @@ export default function EditorPage() {
                 layouts={layouts}
                 breakpoints={{ lg: 1200 }}
                 cols={{ lg: 12 }}
-                rowHeight={30}
+                rowHeight={10}
                 isDraggable
                 isResizable
                 verticalCompact={false}
@@ -189,13 +185,13 @@ export default function EditorPage() {
                 preventCollision
                 draggableCancel=".no-drag"
             >
-                {items.map(widget => (
+                {items.map((widget) => (
                     <div key={widget.id} className="relative">
                         <button
-                            onClick={e => {
+                            onClick={(e) => {
                                 e.stopPropagation();
-                                setItems(items.filter(i => i.id !== widget.id));
-                                setLayouts({ ...layouts, lg: layouts.lg.filter(l => l.i !== widget.id) });
+                                setItems(items.filter((i) => i.id !== widget.id));
+                                setLayouts({ ...layouts, lg: layouts.lg.filter((l) => l.i !== widget.id) });
                             }}
                             className="absolute top-1 right-1 z-10 bg-red-500 text-white text-xs px-2 py-1 rounded hover:bg-red-600 no-drag"
                         >
@@ -205,9 +201,15 @@ export default function EditorPage() {
                             catalogOwnerId="1239"
                             title={widget.config.selectedTaxonName}
                             selectedTaxonId={widget.config.selectedTaxonId}
+                            taxonAlias={widget.config.taxonAlias}
+                            columns={widget.config.columns}
                             readOnly={false}
-                            onChange={(taxonId, taxonName) => setItems(
-                                items.map(i => i.id === widget.id ? { ...i, config: { selectedTaxonId: taxonId, selectedTaxonName: taxonName } } : i)
+                            onChange={(taxonId, taxonName, taxonAlias, columns) => setItems(
+                                items.map((i) =>
+                                    i.id === widget.id
+                                        ? { ...i, config: { selectedTaxonId: taxonId, selectedTaxonName: taxonName, taxonAlias, columns: columns ?? 1 } }
+                                        : i
+                                )
                             )}
                         />
                     </div>

@@ -36,10 +36,11 @@ export default function DynamicEditorNav() {
             <Link href="/editor/new">New Layout</Link>
 
             {currentLayout && (
-                <div className="flex gap-2 ml-4">
-                    {/*<Link href={`/editor/${currentLayout.id}`}>Edit</Link>*/}
-                    <Link href={`/viewer/${currentLayout.id}`}>View</Link>
-                </div>
+                <Link href={`/viewer/${currentLayout.id}`}>
+                    <div className="bg-blue-500 text-white px-3 py-1 rounded">
+                    View
+                    </div>
+                </Link>
             )}
         </nav>
     );

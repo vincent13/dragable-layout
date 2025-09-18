@@ -15,12 +15,14 @@ type WidgetItem = {
     config?: {
         selectedTaxonId?: number;
         selectedTaxonName?: string;
+        taxonAlias?: string;
+        columns?: number;
     };
 };
 
 export default function ViewerPage() {
     const params = useParams<{ layoutId: string }>();
-    const layoutId = params.layoutId; // ✅ comes from /viewer/[layoutId]
+    const layoutId = params.layoutId;
 
     const [layouts, setLayouts] = useState<Layouts>({ lg: [] });
     const [items, setItems] = useState<WidgetItem[]>([]);
@@ -49,12 +51,12 @@ export default function ViewerPage() {
     }, [layoutId]);
 
     return (
-        <div style={{ padding: '1rem' }}>
+        <div>
             <ResponsiveGridLayout
                 layouts={layouts}
                 breakpoints={{ lg: 1200 }}
                 cols={{ lg: 12 }}
-                rowHeight={30}
+                rowHeight={10}
                 isDraggable={false}
                 isResizable={false}
                 compactType={null}
@@ -64,7 +66,8 @@ export default function ViewerPage() {
                         <ProductsWidget
                             catalogOwnerId="1239"
                             selectedTaxonId={widget.config?.selectedTaxonId}
-                            title={widget.config?.selectedTaxonName}
+                            title={widget.config?.taxonAlias || widget.config?.selectedTaxonName}
+                            columns={widget.config?.columns ?? 1}
                             readOnly={true} // viewer mode
                         />
                     </div>
