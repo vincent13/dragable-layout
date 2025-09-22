@@ -87,14 +87,16 @@ button {
 }
 
 .product-name{
-  font-size: 1.7rem;
-  color: #111827;
+  font-size: 1.6rem;
+  color: #1f2022;
+  margin-left: 0.5rem;
 }
 
 .product-price {
-  font-size: 1.5rem;
+  margin-right: 0.5rem;
+  font-size: 1.4rem;
   font-weight: 600;
-  color: black;
+  color: #1f2022;
 }
 select{
   background-color: var(--background);

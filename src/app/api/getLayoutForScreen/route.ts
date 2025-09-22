@@ -1,19 +1,24 @@
 // File: src/app/api/getLayoutForScreen/route.ts
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma'; // adjust path to your prisma client
 
 export async function GET(req: Request) {
-    const { searchParams } = new URL(req.url);
-    const screenId = searchParams.get('screenId');
+    try {
+        const { searchParams } = new URL(req.url);
+        const screenId = searchParams.get('screenId');
 
-    // Fetch from your Screens table (replace with your DB query)
-    const screens = [
-        { screenId: 'screen1', layoutId: 'cmfo3hpdt0000hl5wx3rc0hyu' },
-        { screenId: 'screen2', layoutId: 'cmflat5ks0000hlssi9ye1ilu' },
-        { screenId: 'screen3', layoutId: 'cmflat5ks0000hlssi9ye1ilu' },
-        { screenId: 'screen4', layoutId: 'cmflat5ks0000hlssi9ye1ilu' },
-    ];
+        if (!screenId) {
+            return NextResponse.json({ error: 'screenId is required' }, { status: 400 });
+        }
 
-    const screen = screens.find((s) => s.screenId === screenId);
+        const screen = await prisma.screens.findUnique({
+            where: { screenId },
+            select: { layoutId: true },
+        });
 
-    return NextResponse.json({ layoutId: screen?.layoutId ?? null });
+        return NextResponse.json({ layoutId: screen?.layoutId ?? null });
+    } catch (err) {
+        console.error('Error fetching layout for screen:', err);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
 }
