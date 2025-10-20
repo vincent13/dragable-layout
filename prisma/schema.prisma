@@ -1,0 +1,28 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Layout {
+  id        String   @id @default(cuid())
+  lg        Json
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  screens Screens[]
+}
+
+model Screens {
+  screenId  String   @id @default(cuid())
+  name      String
+  layoutId  String?
+  layout    Layout?  @relation(fields: [layoutId], references: [id], onDelete: SetNull)
+  updatedAt DateTime @updatedAt
+
+  @@index([layoutId])
+}
