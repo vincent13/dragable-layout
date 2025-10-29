@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Responsive, WidthProvider } from 'react-grid-layout';
 import { v4 as uuidv4 } from 'uuid';
 import { ProductsWidget } from '../../custom-component/ProductsWidget';
+import { NewThemeButton } from '../../custom-component/NewThemeButton';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
@@ -36,7 +37,14 @@ type WidgetItem = {
     };
 };
 
-type Screen = { screenId: string; name: string; layoutId: string };
+type Screen = { screenId: string; name: string; layoutId: string; };
+type Theme = {
+    id: string;
+    name: string;
+    background?: string;
+    fontFamily?: string;
+    fontSize?: string;
+};
 
 export default function EditorPage() {
     const params = useParams();
@@ -51,16 +59,31 @@ export default function EditorPage() {
     const [selectedScreen, setSelectedScreen] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const [themeId, setThemeId] = useState<string | null>(null);
+    const [themes, setThemes] = useState<Theme[]>([]);
+
+    // Load screens
     useEffect(() => {
-        fetch('/api/screens').then(res => res.json()).then(setScreens).catch(() => setScreens([]));
+        fetch('/api/screens')
+            .then(res => res.json())
+            .then(setScreens)
+            .catch(() => setScreens([]));
+    }, []);
+    useEffect(() => {
+        fetch('/api/themes')
+            .then(res => res.json())
+            .then(setThemes)
+            .catch(() => setThemes([]));
     }, []);
 
+    // Load layout
     useEffect(() => {
         if (isNewLayout) {
             setLayouts({ lg: [] });
             setItems([]);
             setLayoutName('Untitled Layout');
             setSelectedScreen(null);
+            setThemeId(null);
             setLoading(false);
             return;
         }
@@ -77,10 +100,13 @@ export default function EditorPage() {
                         id: l.i,
                         config: {
                             ...l.config,
-                            columns: Array.isArray(l.config?.columns) ? l.config.columns[0] : l.config?.columns ?? 1,
+                            columns: Array.isArray(l.config?.columns)
+                                ? l.config.columns[0]
+                                : l.config?.columns ?? 1,
                         },
                     }))
                 );
+                setThemeId(data.themeId ?? null);
                 const linkedScreen = screens.find(s => s.layoutId === layoutId);
                 setSelectedScreen(linkedScreen ? linkedScreen.screenId : null);
             })
@@ -113,7 +139,7 @@ export default function EditorPage() {
             const res = await fetch('/api/layout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: layoutName, lg: layoutsWithConfig.lg }),
+                body: JSON.stringify({ name: layoutName, lg: layoutsWithConfig.lg, themeId }),
             });
             if (!res.ok) return alert('Failed to create layout');
             createdLayout = await res.json();
@@ -122,7 +148,7 @@ export default function EditorPage() {
             const res = await fetch(`/api/layout/${layoutId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: layoutName, lg: layoutsWithConfig.lg }),
+                body: JSON.stringify({ name: layoutName, lg: layoutsWithConfig.lg, themeId }),
             });
             if (!res.ok) return alert('Failed to update layout');
             createdLayout = await res.json();
@@ -147,7 +173,7 @@ export default function EditorPage() {
             lg: [...layouts.lg, { i: newId, x: 0, y: Infinity, w: 3, h: 6, config: { columns: 1 } }],
         });
     };
-
+    const selectedTheme = themes.find(t => t.id === themeId);
     if (loading) return <div>Loading layout...</div>;
 
     return (
@@ -169,8 +195,34 @@ export default function EditorPage() {
                         <option key={s.screenId} value={s.screenId}>{s.name}</option>
                     ))}
                 </select>
-                <button onClick={handleSave} className="px-3 py-1 bg-blue-600 text-white rounded">Save</button>
-                <button onClick={handleAddWidget} className="px-3 py-1 bg-green-600 text-white rounded">Add Widget</button>
+
+                <select
+                    value={themeId || ''}
+                    onChange={(e) => setThemeId(e.target.value)}
+                    className="border px-2 py-1 rounded"
+                >
+                    <option value="">-- Select Theme --</option>
+                    {themes.map((t) => (
+                        <option key={t.id} value={t.id}>
+                            {t.name}
+                        </option>
+                    ))}
+                </select>
+
+                <NewThemeButton
+                    onCreated={(theme: Theme) => {
+                        setThemeId(theme.id);
+                        setThemes(prev => [...prev, theme]);
+                        alert(`Theme "${theme.name}" created and selected.`);
+                    }}
+                />
+
+                <button onClick={handleSave} className="px-3 py-1 bg-blue-600 text-white rounded">
+                    Save
+                </button>
+                <button onClick={handleAddWidget} className="px-3 py-1 bg-green-600 text-white rounded">
+                    Add Widget
+                </button>
             </div>
 
             <ResponsiveGridLayout
@@ -204,16 +256,27 @@ export default function EditorPage() {
                             taxonAlias={widget.config.taxonAlias}
                             columns={widget.config.columns}
                             readOnly={false}
-                            onChange={(taxonId, taxonName, taxonAlias, columns) => setItems(
-                                items.map((i) =>
-                                    i.id === widget.id
-                                        ? { ...i, config: { selectedTaxonId: taxonId, selectedTaxonName: taxonName, taxonAlias, columns: columns ?? 1 } }
-                                        : i
+                            onChange={(taxonId, taxonName, taxonAlias, columns) =>
+                                setItems(
+                                    items.map((i) =>
+                                        i.id === widget.id
+                                            ? {
+                                                ...i,
+                                                config: {
+                                                    selectedTaxonId: taxonId,
+                                                    selectedTaxonName: taxonName,
+                                                    taxonAlias,
+                                                    columns: columns ?? 1,
+                                                },
+                                            }
+                                            : i
+                                    )
                                 )
-                            )}
-                        />
+                            }
+                            theme={selectedTheme}/>
+
                     </div>
-                ))}
+                )) }
             </ResponsiveGridLayout>
         </div>
     );

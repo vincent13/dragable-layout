@@ -10,6 +10,14 @@ import 'react-resizable/css/styles.css';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
+type Theme = {
+    id: string;
+    name: string;
+    background?: string;
+    fontFamily?: string;
+    fontSize?: string;
+};
+
 type WidgetItem = {
     id: string;
     config?: {
@@ -26,13 +34,19 @@ export default function ViewerPage() {
 
     const [layouts, setLayouts] = useState<Layouts>({ lg: [] });
     const [items, setItems] = useState<WidgetItem[]>([]);
-
+    const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null);
     useEffect(() => {
         if (!layoutId) return;
 
-        fetch(`/api/layout/${layoutId}`)
-            .then(res => (res.ok ? res.json() : Promise.reject('Layout not found')))
-            .then((data) => {
+        const loadLayout = async () => {
+            try {
+                const res = await fetch(`/api/layout/${layoutId}`);
+                if (!res.ok) {
+                    console.error('Layout not found');
+                    return; // stop execution if layout is not found
+                }
+                const data = await res.json();
+
                 setLayouts(data);
                 if (data.lg) {
                     const savedItems: WidgetItem[] = data.lg.map(
@@ -43,11 +57,22 @@ export default function ViewerPage() {
                     );
                     setItems(savedItems);
                 }
-            })
-            .catch(() => {
+
+                if (data.themeId) {
+                    const themeRes = await fetch(`/api/themes/${data.themeId}`);
+                    if (themeRes.ok) {
+                        const themeData = await themeRes.json();
+                        setSelectedTheme(themeData);
+                    }
+                }
+            } catch (err) {
+                console.error(err);
                 setLayouts({ lg: [] });
                 setItems([]);
-            });
+            }
+        };
+
+        loadLayout();
     }, [layoutId]);
 
     return (
@@ -69,6 +94,7 @@ export default function ViewerPage() {
                             title={widget.config?.taxonAlias || widget.config?.selectedTaxonName}
                             columns={widget.config?.columns ?? 1}
                             readOnly={true} // viewer mode
+                            theme={selectedTheme ?? undefined} // pass theme here
                         />
                     </div>
                 ))}

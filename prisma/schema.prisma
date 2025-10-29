@@ -13,7 +13,8 @@ model Layout {
   name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  themeId String?  // optional so old layouts don’t break
+  theme   Theme?   @relation(fields: [themeId], references: [id], onDelete: SetNull)
   screens Screens[]
 }
 
@@ -25,4 +26,17 @@ model Screens {
   updatedAt DateTime @updatedAt
 
   @@index([layoutId])
+}
+
+model Theme {
+  id         String   @id @default(cuid())
+  name       String
+  background String?
+  fontFamily String?
+  fontSize   String?
+  textColor  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  layouts Layout[]  // One-to-many: a theme can be used by multiple layouts
 }

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import LayoutCell from './layoutCell';
 
+
 type Layout = {
     id: string;
     name: string;
@@ -10,7 +11,7 @@ type Layout = {
 
 export default function HomePageClient() {
     const [layouts, setLayouts] = useState<Layout[]>([]);
-
+    // const [color, setColor] = useState("#e3b26a");
     const fetchLayouts = async () => {
         try {
             const res = await fetch('/api/layout');
@@ -32,19 +33,20 @@ export default function HomePageClient() {
     };
 
     return (
-        <div className="p-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Link href="/editor/new" className="border p-4 rounded shadow text-center font-bold">
-                + New Layout
-            </Link>
+        <>
+            <div className="p-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <Link href="/editor/new" className="border p-4 rounded shadow text-center font-bold">
+                    + New Layout
+                </Link>
 
-            {layouts.map(layout => (
-                <LayoutCell
-                    key={layout.id}
-                    layoutId={layout.id}
-                    layoutname={layout.name}
-                    onDeleted={handleDeleted}
-                />
-            ))}
-        </div>
+                {layouts.map(layout => (
+                    <LayoutCell
+                        key={layout.id}
+                        layoutId={layout.id}
+                        layoutname={layout.name}
+                        onDeleted={handleDeleted}/>
+                ))}
+            </div>
+        </>
     );
 }

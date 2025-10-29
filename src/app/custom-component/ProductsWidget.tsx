@@ -13,6 +13,12 @@ interface ProductsWidgetProps {
     onChange?: (taxonId: number, taxonName: string, alias?: string, columns?: number) => void;
     readOnly?: boolean;
     onRemove?: () => void;
+    theme?: {
+        background?: string;
+        fontFamily?: string;
+        fontSize?: string;
+        textColor?: string;
+    };
 }
 
 export const ProductsWidget: React.FC<ProductsWidgetProps> = ({
@@ -24,6 +30,7 @@ export const ProductsWidget: React.FC<ProductsWidgetProps> = ({
                                                                   onChange,
                                                                   readOnly = false,
                                                                   onRemove,
+                                                                  theme,
                                                               }) => {
     const [taxons, setTaxons] = useState<Taxon[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
@@ -132,7 +139,8 @@ export const ProductsWidget: React.FC<ProductsWidgetProps> = ({
                     products.map((p) => (
                         <div
                             key={p.id}
-                            className="product-item p-1 bg-yellow-200 rounded flex justify-between"
+                            className={`product-item p-1 rounded flex justify-between ${
+                                theme?.background ?? ''} ${theme?.fontFamily ?? ''} ${theme?.fontSize ?? ''} ${theme?.textColor ?? ''}`}
                         >
                             <span className="product-name">{p.name}</span>
                             <span className="product-price">€{p.price}</span>

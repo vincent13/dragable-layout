@@ -48,3 +48,14 @@ export type WidgetItem = {
 };
 
 export type LayoutData = WidgetItem[];
+
+export type Theme = {
+    id: string;
+    name: string;
+    background?: string;
+    fontFamily?: string;
+    fontSize?: string;
+    textColor?: string;
+    createdAt?: string;
+    updatedAt?: string;
+};

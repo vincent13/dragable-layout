@@ -10,6 +10,7 @@ export interface LayoutItem {
 export interface UpdateLayoutBody {
     lg?: LayoutItem[];
     name?: string;
+    themeId?: string | null;
 }
 
 export async function GET(
@@ -17,7 +18,8 @@ export async function GET(
     { params }: { params: Promise<{ layoutId: string }> }
 ) {
     const { layoutId } = await params;
-    const layout = await prisma.layout.findUnique({ where: { id: layoutId } });
+    const layout = await prisma.layout.findUnique({ where: { id: layoutId }, include: { theme: true},});
+
     if (!layout) return NextResponse.json({ error: 'Layout not found' }, { status: 404 });
     return NextResponse.json(layout);
 }
@@ -43,6 +45,7 @@ export async function PUT(
         data: {
             name: body.name ?? 'Untitled Layout',
             lg: body.lg ?? [],
+            themeId: body.themeId ?? null,
         },
     });
 

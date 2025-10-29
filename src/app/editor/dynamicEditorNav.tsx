@@ -34,7 +34,6 @@ export default function DynamicEditorNav() {
         <nav className="flex gap-4 items-center">
             <Link href="/">Home</Link>
             <Link href="/editor/new">New Layout</Link>
-
             {currentLayout && (
                 <Link href={`/viewer/${currentLayout.id}`}>
                     <div className="bg-blue-500 text-white px-3 py-1 rounded">
