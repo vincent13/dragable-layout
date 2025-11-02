@@ -1,14 +1,18 @@
-// File: src/app/api/getLayoutForScreen/route.ts
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma'; // adjust path to your prisma client
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
-        const screenId = searchParams.get('screenId');
+        const screenIdParam = searchParams.get('screenId');
 
-        if (!screenId) {
+        if (!screenIdParam) {
             return NextResponse.json({ error: 'screenId is required' }, { status: 400 });
+        }
+
+        const screenId = Number(screenIdParam);
+        if (isNaN(screenId)) {
+            return NextResponse.json({ error: 'Invalid screenId' }, { status: 400 });
         }
 
         const screen = await prisma.screens.findUnique({

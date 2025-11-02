@@ -19,7 +19,7 @@ model Layout {
 }
 
 model Screens {
-  screenId  String   @id @default(cuid())
+  screenId  Int      @id
   name      String
   layoutId  String?
   layout    Layout?  @relation(fields: [layoutId], references: [id], onDelete: SetNull)

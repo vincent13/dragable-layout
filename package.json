@@ -1,14 +1,35 @@
 {
-  "name": "gridster-trial",
-  "version": "0.1.0",
+  "name": "dragable-ui",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
+  "main": "electron/main.js",
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "concurrently \"npm run dev:next\" \"npm run dev:electron\"",
+    "dev:next": "next dev --port 3000 --turbopack",
+    "dev:electron": "wait-on http://localhost:3000 && electron .",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "electron": "electron electron/main.js"
+    "electron": "electron .",
+    "lint": "next lint"
+  },
+  "build": {
+    "appId": "com.dragableui.app",
+    "productName": "DragableUI",
+    "files": [
+      "electron/**/*",
+      ".next/**/*",
+      "public/**/*",
+      "sqlite/**/*",
+      "prisma/**/*"
+    ],
+    "directories": {
+      "output": "build"
+    },
+    "win": {
+      "target": "dir",
+      "sign": false
+    }
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -32,12 +53,15 @@
     "@types/react-dom": "^19",
     "@types/react-grid-layout": "^1.3.5",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^9.1.0",
     "electron": "^38.1.2",
+    "electron-builder": "^26.0.12",
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
     "postcss": "^8.5.6",
     "prisma": "^6.16.2",
     "tailwindcss": "^4.1.15",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wait-on": "^8.0.0"
   }
 }

@@ -1,34 +1,14 @@
-import { spawn } from 'child_process';
-import fetch from 'node-fetch';
 import { app, BrowserWindow, screen } from 'electron';
-
-async function startServer() {
-    return new Promise((resolve, reject) => {
-        const server = spawn('npm', ['run', 'start'], { shell: true, stdio: 'inherit' });
-
-        server.on('error', reject);
-
-        const checkServer = async () => {
-            try {
-                const res = await fetch('http://localhost:3000');
-                if (res.ok) return resolve(server); // server ready
-            } catch {
-                setTimeout(checkServer, 500);
-            }
-        };
-        checkServer();
-    });
-}
+import fetch from 'node-fetch';
 
 async function createWindows() {
-    const displays = screen.getAllDisplays().sort((a, b) => a.bounds.x - b.bounds.x);
+    const displays = screen.getAllDisplays().sort((a,b) => a.bounds.x - b.bounds.x);
 
-    for (let index = 0; index < displays.length; index++) {
-        const display = displays[index];
-        const screenId = `screen${index + 1}`;
+    for (let i = 0; i < displays.length; i++) {
+        const display = displays[i];
+        const screenId = `${i + 1}`; // matches your API records: 1, 2, 3…
         const apiUrl = `http://localhost:3000/api/getLayoutForScreen?screenId=${screenId}`;
 
-        // Wait until API responds
         let layoutId;
         for (let attempt = 1; attempt <= 10; attempt++) {
             try {
@@ -53,7 +33,7 @@ async function createWindows() {
             width: display.bounds.width,
             height: display.bounds.height,
             fullscreen: true,
-            webPreferences: { nodeIntegration: false, contextIsolation: true },
+            webPreferences: { nodeIntegration: false, contextIsolation: true }
         });
 
         win.loadURL(`http://localhost:3000/viewer/${layoutId}`);
@@ -61,8 +41,21 @@ async function createWindows() {
 }
 
 app.whenReady().then(async () => {
-    console.log('Starting Next.js server...');
-    await startServer();
-    console.log('Server ready, creating windows...');
-    await createWindows();
+    const isDev = !app.isPackaged;
+
+    if (isDev) {
+        console.log('Dev mode: skipping internal server start, waiting for dev server');
+        // Give dev server time to fully compile
+        setTimeout(async () => {
+            await createWindows();
+        }, 3000);
+    } else {
+        console.log('Prod mode: starting internal server');
+        await startServer(); // only in production
+        await createWindows();
+    }
+});
+
+app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') app.quit();
 });

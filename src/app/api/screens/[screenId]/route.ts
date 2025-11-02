@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
     request: Request,
-    { params }: { params: Promise<{ screenId: string }> }
+    { params }: { params: Promise<{ screenId: number }> }
 ) {
     const { screenId } = await params;
 
@@ -20,19 +20,29 @@ export async function GET(
     return NextResponse.json(screen);
 }
 
-export async function PUT(
-    request: Request,
-    { params }: { params: Promise<{ screenId: string }>  }
-) {
-    const { screenId } = await params;
+export async function PUT(request: Request, context: { params: Promise<{ screenId: number }> }) {
+    const { params } = context;
+    const { screenId: screenIdStr } = await params; // await here
+    const screenId = Number(screenIdStr);
+
+    if (isNaN(screenId)) {
+        return NextResponse.json({ error: 'Invalid screenId' }, { status: 400 });
+    }
+
     const body = await request.json();
     const { layoutId } = body;
 
-    const updatedScreen = await prisma.screens.update({
-        where: { screenId },
-        data: { layoutId },
-        include: { layout: true }, // return the associated layout too
-    });
-
-    return NextResponse.json(updatedScreen);
+    try {
+        const updatedScreen = await prisma.screens.update({
+            where: { screenId },
+            data: { layoutId },
+            include: { layout: true },
+        });
+        return NextResponse.json(updatedScreen);
+    } catch (err) {
+        console.error(err);
+        return NextResponse.json({ error: 'Failed to update screen' }, { status: 500 });
+    }
 }
+
+

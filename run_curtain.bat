@@ -1,20 +1,18 @@
 @echo off
-cd /d "C:\Java\Projects\personal projects\gridster-trial"
+:: -- Start Next.js silently in background
+start "Next.js Server" /b cmd /c "npm run start"
 
-:: Start Next.js silently in background
-start /b npm run start
-
-:: Wait for server to be ready
+:: -- Wait for server to be ready
 echo Waiting for Next.js server...
 :waitloop
-curl -s -o nul http://localhost:3000/api/getLayoutForScreen?screenId=screen1'
+curl -s -o nul http://localhost:3000/api/getLayoutForScreen?screenId=1
 if errorlevel 1 (
     timeout /t 1 >nul
     goto waitloop
 )
 
-:: Start Electron curtain
-npm run electron
+:: -- Start Electron
+start "Electron App" cmd /c "npm run electron"
 
-echo Exit Code: %errorlevel%
+echo Done!
 pause

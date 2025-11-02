@@ -13,9 +13,16 @@ export async function GET() {
 
 export async function PUT(
     request: Request,
-    { params }: { params:  Promise<{ screenId: string }> }
+    context: { params: Promise<{ screenId: string }> } // ✅ params is a Promise
 ) {
-    const { screenId } = await params;
+    const { params } = context;
+    const { screenId: screenIdStr } = await params; // await the promise
+    const screenId = Number(screenIdStr);          // convert to number
+
+    if (isNaN(screenId)) {
+        return NextResponse.json({ error: 'Invalid screenId' }, { status: 400 });
+    }
+
     const body = await request.json();
     const { layoutId } = body;
 
@@ -23,7 +30,7 @@ export async function PUT(
         const updatedScreen = await prisma.screens.update({
             where: { screenId },
             data: { layoutId },
-            include: { layout: true }, // optional: return associated layout
+            include: { layout: true },
         });
         return NextResponse.json(updatedScreen);
     } catch (err) {
@@ -31,3 +38,4 @@ export async function PUT(
         return NextResponse.json({ error: 'Failed to update screen' }, { status: 500 });
     }
 }
+

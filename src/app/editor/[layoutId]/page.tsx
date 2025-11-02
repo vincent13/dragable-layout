@@ -37,7 +37,7 @@ type WidgetItem = {
     };
 };
 
-type Screen = { screenId: string; name: string; layoutId: string; };
+type Screen = { screenId: number; name: string; layoutId: string; };
 type Theme = {
     id: string;
     name: string;
@@ -56,9 +56,8 @@ export default function EditorPage() {
     const [layouts, setLayouts] = useState<LayoutsState>({ lg: [] });
     const [items, setItems] = useState<WidgetItem[]>([]);
     const [screens, setScreens] = useState<Screen[]>([]);
-    const [selectedScreen, setSelectedScreen] = useState<string | null>(null);
+    const [selectedScreen, setSelectedScreen] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
-
     const [themeId, setThemeId] = useState<string | null>(null);
     const [themes, setThemes] = useState<Theme[]>([]);
 
@@ -187,7 +186,7 @@ export default function EditorPage() {
                 />
                 <select
                     value={selectedScreen || ''}
-                    onChange={(e) => setSelectedScreen(e.target.value)}
+                    onChange={(e) => setSelectedScreen(Number(e.target.value))}
                     className="border px-2 py-1 rounded"
                 >
                     <option value="">-- Assign to Screen --</option>
